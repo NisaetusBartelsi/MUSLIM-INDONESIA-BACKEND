@@ -35,16 +35,19 @@ Route::group(['middleware' => ['guest']], function () {
     Route::get('/login/google', [LoginController::class, 'redirectToGoogle']);
     Route::get('/login/google/callback', [LoginController::class, 'handleGoogleCallback']);
     Route::get('verify-email/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
-    
+
     //Profile CRUD
     Route::post('/edit-profile/{id}', [ProfileController::class, 'UpdateProfile']);
     Route::post('/delete-profile/{id}', [ProfileController::class, 'DeleteProfile']);
     Route::post('/read-profile/{username}', [ProfileController::class, 'ReadProfile']);
 
-    
+
     Route::post('/create-place', [PlaceController::class, 'CreatePlace']);
     Route::post('/update-place/{id}', [PlaceController::class, 'UpdatePlace']);
-    Route::post('/delete-place/{id}', [PlaceController::class, 'DeletePlace']);
+    Route::post('/softdelete-place/{id}', [PlaceController::class, 'SoftDeletePlace']);
+    Route::post('/restore-place/{id}', [PlaceController::class, 'RestorePlace']);
+    Route::post('/trash-place/{id}', [PlaceController::class, 'TrashPlace']);
+    Route::post('/delete-place/{id}', [PlaceController::class, 'ForceDeletePlace']);
     Route::post('/read-place', [PlaceController::class, 'ReadAllPlace']);
     Route::post('/read-detail-place/{userame}/{id}', [PlaceController::class, 'ReadDetailPlace']);
     Route::post('/search', [PlaceController::class, 'search']);

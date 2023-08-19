@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginSystem\LoginController;
+use App\Http\Controllers\PlaceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,3 +21,4 @@ Route::get('/', function () {
 
 Route::get('/login/google', [LoginController::class, 'redirectToGoogle']);
 Route::get('/login/google/callback', [LoginController::class, 'handleGoogleCallback']);
+Route::get('/export-excel', [PlaceController::class, 'exportToExcel']);

@@ -8,6 +8,8 @@ use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlaceController extends Controller
 {
@@ -68,23 +70,6 @@ class PlaceController extends Controller
         return response()->json(['Toko Berhasil Ditambah']);
     }
 
-    public function DeletePlace($id)
-    {
-        $auth = auth('api')->user();
-        if (!$auth) {
-            return response()->json(['Anda belum terdaftar']);
-        }
-
-        $place = Place::find($id);
-        if (!$place) {
-            return response()->json(['error' => 'Perusahaan tidak ditemukan']);
-        } else {
-            CloudinaryStorage2::delete($place->photo);
-            $place->delete();
-        }
-
-        return response()->json(['Toko berhasil Dihapus']);
-    }
 
     public function UpdatePlace(Request $request, $id)
     {
@@ -223,7 +208,7 @@ class PlaceController extends Controller
         $response = $client->get($base_url . $params);
         $data = json_decode($response->getBody(), true);
         // dd($data);
-        
+
         if (!empty($data)) {
             return ['latitude' => $data[0]['lat'], 'longitude' => $data[0]['lon']];
         } else {
@@ -273,5 +258,71 @@ class PlaceController extends Controller
         }
 
         return response()->json($place);
+    }
+
+    public function SoftDeletePlace($id)
+    {
+        $post = Place::findOrFail($id);
+        $post->delete(); // Soft delete
+        return response()->json(['message' => 'Post soft deleted successfully']);
+    }
+
+    public function RestorePlace($id)
+    {
+        $post = Place::withTrashed()->findOrFail($id);
+        $post->restore(); // Restore data
+        return response()->json(['message' => 'Post restored successfully']);
+    }
+
+    public function TrashPlace()
+    {
+        $deletedPosts = Place::onlyTrashed()->get();
+        return response()->json($deletedPosts);
+    }
+
+    public function ForceDeletePlace($id)
+    {
+        $post = Place::withTrashed()->find($id);
+        $post->forceDelete(); // Hard delete
+        return response()->json(['message' => 'Post permanently deleted']);
+    }
+
+
+    public function exportToExcel()
+    {
+        $data = Place::all();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Tulis header kolom
+        $headers = [
+            'ID', 'User ID', 'Place Name', 'Categories', 'Photo', 'Description Photo',
+            'Province', 'Regency', 'District', 'Village', 'Address', 'Longitude', 'Latitude',
+            'Created At', 'Updated At', 'Deleted At'
+        ];
+        $sheet->fromArray($headers, null, 'A1');
+
+        // Tulis data
+        $rowData = [];
+        foreach ($data as $item) {
+            $rowData[] = [
+                $item->id, $item->user_id, $item->place_name, $item->categories,
+                $item->photo, $item->deskripsi_photo, $item->province,
+                $item->regency, $item->district, $item->village,
+                $item->addres, $item->long, $item->lat,
+                $item->created_at, $item->updated_at, $item->deleted_at
+            ];
+        }
+        $sheet->fromArray($rowData, null, 'A2');
+
+        // Buat penulis (writer) untuk format Excel (XLSX)
+        $writer = new Xlsx($spreadsheet);
+
+        // Simpan atau kirimkan file Excel
+        $filePath = storage_path('app/public/places.xlsx');
+        $writer->save($filePath);
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 }
